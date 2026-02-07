@@ -2,9 +2,31 @@ from build123d import *
 import math as m
 
 class AzimuthalEquidistantProjecor():
+
+    @classmethod
+    def pt_onarc(cls, phi : float, theta : float, r : float):
+        """
+        get a point on the sphere given by the two angles and the radius of the sphere
+        
+        :param self: Description
+        :param phi: Azimuthal angle (angle beween the projection of the point onto the xy-plane and the x-axis (1,0,0))
+        :type phi: float
+        :param theta: polar angle, angle between point an north pole vector (0,0,1*r)
+        :type theta: float
+        :param r : radius of the arc
+        :type r : float
+        """
+        x = r*m.sin(theta)*m.cos(phi)
+        y = r*m.sin(theta)*m.sin(phi)
+        z = r*m.cos(theta)
+
+        return Vector(x,y,z)
+
+
     def __init__(self, sphcenter:Vector=Vector(0,0,0), 
                  sphrad:float=1.0, 
-                 projcenterpt:Vector=None):
+                 projcenterpt:Vector=None,
+                 zeromed:Vector=None):
         """
          erzeugt ein Exemplar der Klasse
         
@@ -20,72 +42,65 @@ class AzimuthalEquidistantProjecor():
         self._sphrad = sphrad
 
         if projcenterpt is None:
-            scp = Pos(0,0,0)
+            scp = self.pt_at(0,0) #use the north pole
+            self._zeromed = Vector(1,0,0)
         else:
             scp = projcenterpt
+            if zeromed is None:
+                raise Exception("you have to supply a zero meridian vector when you set a projection pt")
+            
+            self._zeromed = zeromed
 
         if not self._is_pt_on_sphere(scp):
-            self._chk = False
-            scpint = self._correct_pt(scp)
-            #when its not on the sphere correct it by elongating or shortening the vector
-            sppt = scpint * (sphrad/scpint.length)
-            scp = sppt
-        else:
-            scp = self._correct_pt(projcenterpt)
-
-        self._chk = True
+            raise Exception("projection centre point mus be a point on the shpere that gets projected")
+        
         self._projcenterpt = scp
 
     def to_rad(self, ang : float):
         return m.pi * ang/180
     
-    def get_long_lat(self, x, y, z):
-        phi = Vector(1,0,0).get_angle(Vector(x,y,0))
-        lamb = Vector(1,0,0).get_angle(Vector(x,0,z))
-        return self.to_rad(phi), self.to_rad(lamb)
+    def pt_at(self, phi : float, theta : float):
+        """
+        get a point on the sphere given by the two angles
+        
+        :param self: Description
+        :param phi: Azimuthal angle (angle beween the projection of the point onto the xy-plane and the x-axis (1,0,0))
+        :type phi: float
+        :param theta: polar angle, angle between point an north pole vector (0,0,1*r)
+        :type theta: float
+        """
+        r = self._sphrad
+        x = r*m.sin(theta)*m.cos(phi)
+        y = r*m.sin(theta)*m.sin(phi)
+        z = r*m.cos(theta)
+
+        return Vector(x,y,z)
+    
     
     def _is_pt_on_sphere(self, ptt : Vector):
         return m.fabs(ptt.length - self._sphrad) < 1e-8
     
-    def _correct_pt(self, pt : Vector) -> Vector:
-        """
-        transfer a point to the relative coordinate system of the projected
-        spher
-        
-        :param self: Description
-        :param pt: point to be transferred
-        :type pt: Vector
-        :return: transferred point
-        :rtype: Vector
-        """
-        ptt = pt - self._sphcenter
-
-        if self._chk :
-            if not self._is_pt_on_sphere(ptt):
-                raise Exception("A point that must be projected is not on the sphere")
-
-        return ptt
     
-    def _get_latlong(self, pt : Vector):
-        zax = -1 * self._projcenterpt
-        xax = -1 * Plane.XY.x_dir
-        zax = Plane.XY.z_dir
-
-        lambdadeg = xax.get_signed_angle(pt)
-        phideg = zax.get_signed_angle(pt)
-
-        return self.to_rad(phideg), self.to_rad(lambdadeg)
-
+    def get_phitheta(self, pt : Vector):
+        theta_d = self._projcenterpt.get_signed_angle(pt)
+        theta = self.to_rad(theta_d)
+        xypropt = Vector(pt.X, pt.Y)
+        if xypropt.length < 1e-20:
+            phi = 0
+        else:
+            phi_d = xypropt.get_signed_angle(self._zeromed)
+            phi = self.to_rad(phi_d)
+            
+        return phi,theta
+    
 
     def proj_point(self, pt : Vector) -> Vector:
-        ptt = self._correct_pt(pt)
-        phi, lam = self._get_latlong(ptt)
-        phic, lamc = self._get_latlong(self._projcenterpt)
-        sigma = m.atan((m.cos(phi)*m.sin(lam-lamc))/(m.cos(phic)*m.sin(phi)-m.sin(phic)*m.cos(phi)*m.cos(lam-lamc)))
-        rho = self._sphrad * m.acos(m.sin(phic)*m.sin(phi) + m.cos(phic)*m.cos(phi)*m.cos(lam-lamc))
-        
-        x = rho * m.sin(sigma)
-        y = rho * m.cos(sigma)
+        phi, theta = self.get_phitheta(pt)
+        phic, thetac = self.get_phitheta(self._projcenterpt)
+
+        rho = self._sphrad * (theta - thetac)
+        y = rho * m.sin(phi)
+        x = rho * m.cos(phi)
 
         return Vector(x,y,0)
     
@@ -99,10 +114,11 @@ class AzimuthalEquidistantProjecor():
 
     def project_circle(self, ed: Edge):
         pc = ed.arc_center
-
+        dbgstr = "project_circle..."
         if ed.is_closed: 
             # this only happends when the full circle is on the sphere
             # the procetion normally is a strangely bent curve
+            dbgstr += "closed circle"
             pr = pc + Vector(ed.radius,0,0)
 
             pcp = self.proj_point(pc)
@@ -110,21 +126,35 @@ class AzimuthalEquidistantProjecor():
 
             rp = (prp - pcp).length
             answ = Pos(pcp) * Circle(rp)
-        else:
+        elif pc == self._sphcenter:
             #now the centre of that circle should be identical with the centre of the sphere 
             #and the projection is a straight line
+            dbgstr += "arc centre = centre of sphere"
             sp = ed.start_point()
             ep = ed.end_point()
 
             psp = self.proj_point(sp)
             pep = self.proj_point(ep)
             answ = Line(psp, pep)
+        else:
+            #we haw an arc with a center somewhere on the sphere and start end endpt also on the sphere
+            dbgstr += "centre on sphere"
+            locs = ed.distribute_locations(10, positions_only=True)
+            ptsp = []
+            for loc in locs:
+                v = Vector(loc.position.X, loc.position.Y, loc.position.Z)
+                ptsp.append(self.proj_point(v))
+            
+            answ = Spline(ptsp)
+
+        print(dbgstr)
         return answ
     
     def project(self, eds : list[Edge]):
 
         answ = ShapeList()
         for edg in eds:
+            print(edg.geom_type)
             match edg.geom_type:
                 case GeomType.LINE:
                     newl = self.project_line(edg)
@@ -132,8 +162,10 @@ class AzimuthalEquidistantProjecor():
                 case GeomType.CIRCLE:
                     newcirc = self.project_circle(edg)
                     answ.append(newcirc)
+                case GeomType.BSPLINE:
+                    print("BSPLINE - not handled")
                 case _:
-                    print(edg.geom_type)
+                    print("not handled")
                     #raise Exception("Unknown geometry type for projection")
 
         return answ

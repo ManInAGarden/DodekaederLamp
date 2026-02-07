@@ -53,9 +53,11 @@ projs = []
 for sh in psk.edges():
     projs.append(spo.project(sh))
 
-azspro = AzimuthalEquidistantProjecor(sphcenter=spo.center, 
-                                      sphrad=spo.radius, 
-                                      projcenterpt=Vector(dc.X, dc.Y,0))
+projectpt = AzimuthalEquidistantProjecor.pt_onarc(0,m.pi, spo.radius)
+azspro = AzimuthalEquidistantProjecor(sphcenter=spo.center,
+                                      projcenterpt=projectpt, 
+                                      sphrad=spo.radius,
+                                      zeromed=Vector(1,0,0))
 
 planproj =  []
 for edg in projs:
@@ -63,5 +65,5 @@ for edg in projs:
     planproj.append(planed)
 
 show_clear()
-show(psk, dode_sk, projs, sps)
+show(psk, dode_sk, projs, sps, planproj)
 #show(Dodecahedron(outerradius=r))
