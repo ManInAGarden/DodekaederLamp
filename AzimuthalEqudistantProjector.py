@@ -4,7 +4,7 @@ import math as m
 class AzimuthalEquidistantProjecor():
 
     @classmethod
-    def pt_onarc(cls, phi : float, theta : float, r : float):
+    def pt_onarc(cls, phi : float, theta : float, r : float, cent : Vector=Vector(0,0,0)):
         """
         get a point on the sphere given by the two angles and the radius of the sphere
         
@@ -15,12 +15,14 @@ class AzimuthalEquidistantProjecor():
         :type theta: float
         :param r : radius of the arc
         :type r : float
+        :param cent: the centre of the sphere
+        :type cent: Vector
         """
         x = r*m.sin(theta)*m.cos(phi)
         y = r*m.sin(theta)*m.sin(phi)
         z = r*m.cos(theta)
 
-        return Vector(x,y,z)
+        return cent - Vector(x,y,z)
 
 
     def __init__(self, sphcenter:Vector=Vector(0,0,0), 
@@ -55,6 +57,9 @@ class AzimuthalEquidistantProjecor():
             raise Exception("projection centre point mus be a point on the shpere that gets projected")
         
         self._projcenterpt = scp
+
+    def set_proj_center(self, phi, theta):
+        self._projcenterpt = self.pt_at(phi, theta)
 
     def to_rad(self, ang : float):
         return m.pi * ang/180
@@ -94,11 +99,15 @@ class AzimuthalEquidistantProjecor():
         return phi,theta
     
 
+    def proj_outerpoint(self, pt : Vector) -> Vector:
+        ptp = self.proj_point(self.to_relcoords(pt))
+        return self.to_outercoords(ptp)
+    
     def proj_point(self, pt : Vector) -> Vector:
         phi, theta = self.get_phitheta(pt)
         phic, thetac = self.get_phitheta(self._projcenterpt)
 
-        rho = self._sphrad * (theta - thetac)
+        rho = self._sphrad * m.fabs(theta - thetac)
         y = rho * m.sin(phi)
         x = rho * m.cos(phi)
 
@@ -107,13 +116,33 @@ class AzimuthalEquidistantProjecor():
     def proj_line(self, l : Line):
         st = l.start_point()
         end = l.end_point()
-        stp = self.proj_point(st)
-        endp = self.proj_point(end)
+        stp = self.proj_outerpoint(st)
+        endp = self.proj_outerpoint(end)
 
         return Line(stp,endp)
 
+    def to_relcoords(self, v:Vector):
+        return v - self._sphcenter
+    
+    def to_outercoords(self, v:Vector):
+        return v + self._sphcenter
+    
+    def project_bspline(self, ed: Edge):
+        ptps = []
+        steps = 20
+        stepsize = 1/20
+        for i in range(0,steps):
+            pf = i*stepsize
+            pt = ed.position_at(pf)
+            ptp = self.proj_outerpoint(pt)
+            ptps.append(ptp)
+
+        return Spline(ptps)
+
     def project_circle(self, ed: Edge):
         pc = ed.arc_center
+        pc = self.to_relcoords(pc)
+
         dbgstr = "project_circle..."
         if ed.is_closed: 
             # this only happends when the full circle is on the sphere
@@ -121,20 +150,22 @@ class AzimuthalEquidistantProjecor():
             dbgstr += "closed circle"
             pr = pc + Vector(ed.radius,0,0)
 
-            pcp = self.proj_point(pc)
-            prp = self.proj_point(pr)
+            pcp = self.to_outercoords(self.proj_point(pc))
+            prp = self.proj_outerpoint(pr)
 
             rp = (prp - pcp).length
             answ = Pos(pcp) * Circle(rp)
-        elif pc == self._sphcenter:
+            
+        elif pc.length < 1e-15: #great circle
             #now the centre of that circle should be identical with the centre of the sphere 
             #and the projection is a straight line
             dbgstr += "arc centre = centre of sphere"
             sp = ed.start_point()
             ep = ed.end_point()
 
-            psp = self.proj_point(sp)
-            pep = self.proj_point(ep)
+            psp = self.proj_outerpoint(sp)
+            pep = self.proj_outerpoint(ep)
+
             answ = Line(psp, pep)
         else:
             #we haw an arc with a center somewhere on the sphere and start end endpt also on the sphere
@@ -143,7 +174,8 @@ class AzimuthalEquidistantProjecor():
             ptsp = []
             for loc in locs:
                 v = Vector(loc.position.X, loc.position.Y, loc.position.Z)
-                ptsp.append(self.proj_point(v))
+                vp = self.proj_outerpoint(v)
+                ptsp.append(vp)
             
             answ = Spline(ptsp)
 
@@ -163,7 +195,8 @@ class AzimuthalEquidistantProjecor():
                     newcirc = self.project_circle(edg)
                     answ.append(newcirc)
                 case GeomType.BSPLINE:
-                    print("BSPLINE - not handled")
+                    newspl = self.project_bspline(edg)
+                    answ.append(newspl)
                 case _:
                     print("not handled")
                     #raise Exception("Unknown geometry type for projection")

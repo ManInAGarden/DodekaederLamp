@@ -53,16 +53,15 @@ projs = []
 for sh in psk.edges():
     projs.append(spo.project(sh))
 
-projectpt = AzimuthalEquidistantProjecor.pt_onarc(0,m.pi, spo.radius)
 azspro = AzimuthalEquidistantProjecor(sphcenter=spo.center,
-                                      projcenterpt=projectpt, 
-                                      sphrad=spo.radius,
-                                      zeromed=Vector(1,0,0))
+                                      sphrad=spo.radius)
+azspro.set_proj_center(0, m.pi) #projection centre on the south pole
 
-planproj =  []
+planproj = Sketch()
 for edg in projs:
     planed = azspro.project(edg)
-    planproj.append(planed)
+    planed = Pos(0,0, -spo.radius - 10) * planed
+    planproj += planed
 
 show_clear()
 show(psk, dode_sk, projs, sps, planproj)
