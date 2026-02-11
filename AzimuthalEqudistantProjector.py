@@ -113,13 +113,15 @@ class AzimuthalEquidistantProjecor():
 
         return Vector(x,y,0)
     
-    def proj_line(self, l : Line):
+    def proj_line(self, l : Line) -> ShapeList:
+        answ = ShapeList()
         st = l.start_point()
         end = l.end_point()
         stp = self.proj_outerpoint(st)
         endp = self.proj_outerpoint(end)
+        answ.append(Line(stp,endp))
 
-        return Line(stp,endp)
+        return answ
 
     def to_relcoords(self, v:Vector):
         return v - self._sphcenter
@@ -127,7 +129,8 @@ class AzimuthalEquidistantProjecor():
     def to_outercoords(self, v:Vector):
         return v + self._sphcenter
     
-    def project_bspline(self, ed: Edge):
+    def project_bspline(self, ed: Edge) ->ShapeList:
+        answ = ShapeList()
         ptps = []
         steps = 20
         stepsize = 1/20
@@ -137,11 +140,14 @@ class AzimuthalEquidistantProjecor():
             ptp = self.proj_outerpoint(pt)
             ptps.append(ptp)
 
-        return Spline(ptps)
+        answ.append(Spline(ptps))
 
-    def project_circle(self, ed: Edge):
+        return answ
+
+    def project_circle(self, ed: Edge) -> ShapeList:
         pc = ed.arc_center
         pc = self.to_relcoords(pc)
+        answ = ShapeList()
 
         dbgstr = "project_circle..."
         if ed.is_closed: 
@@ -154,7 +160,7 @@ class AzimuthalEquidistantProjecor():
             prp = self.proj_outerpoint(pr)
 
             rp = (prp - pcp).length
-            answ = Pos(pcp) * Circle(rp)
+            answ.append(Pos(pcp) * Circle(rp))
             
         elif pc.length < 1e-15: #great circle
             #now the centre of that circle should be identical with the centre of the sphere 
@@ -166,7 +172,7 @@ class AzimuthalEquidistantProjecor():
             psp = self.proj_outerpoint(sp)
             pep = self.proj_outerpoint(ep)
 
-            answ = Line(psp, pep)
+            answ.append(Line(psp, pep))
         else:
             #we haw an arc with a center somewhere on the sphere and start end endpt also on the sphere
             dbgstr += "centre on sphere"
@@ -177,31 +183,31 @@ class AzimuthalEquidistantProjecor():
                 vp = self.proj_outerpoint(v)
                 ptsp.append(vp)
             
-            answ = Spline(ptsp)
+            answ.append(Spline(ptsp))
 
         print(dbgstr)
         return answ
     
-    def project(self, eds : list[Edge]):
-
+    #def project(self, eds : list[Edge]):
+    def project(self, sk : Sketch) -> Sketch:
         answ = ShapeList()
-        for edg in eds:
-            print(edg.geom_type)
+        for edg in sk.edges():
+            #print(edg.geom_type)
             match edg.geom_type:
                 case GeomType.LINE:
                     newl = self.project_line(edg)
-                    answ.append(newl)
+                    answ += newl
                 case GeomType.CIRCLE:
                     newcirc = self.project_circle(edg)
-                    answ.append(newcirc)
+                    answ += newcirc
                 case GeomType.BSPLINE:
                     newspl = self.project_bspline(edg)
-                    answ.append(newspl)
+                    answ += newspl
                 case _:
-                    print("not handled")
-                    #raise Exception("Unknown geometry type for projection")
+                    #print("not handled")
+                    raise Exception("Unknown geometry type for projection")
 
-        return answ
+        return Sketch(answ)
             
 
 

@@ -32,26 +32,63 @@ class SphericalProjector():
         
         return (f * ptp) + self._center
     
-    def project_circle(self, center : Vector, radius : float) -> Circle:
-        ct = type(center)
-        r1 = Vector(radius,0) + center
-        r2 = Vector(-radius, 0) + center
 
-        r1p = self.project_pt(r1)
-        r2p = self.project_pt(r2)
-        rad = r1p-r2p
-        cp = r1p + 0.5*rad
-        radp = 0.5*rad.length
-        return Circle(radp).moved(Location(cp))
+    def project_edge_to_shape(
+        self,
+        edg : Edge,
+        target_object, #a Shape
+        direction: VectorLike | None = None,
+        center: VectorLike | None = None,
+    ) -> list[Edge]:
+        """Project Edge - COPY BECAUSE THE ORIGINAL CONTAINS AN ERROR
 
-    
-    def project(self, edgetoproject : Edge):
-        wi = Wire([edgetoproject])
-        projected_wires = wi.project_to_shape(self._mysphere, center=self._center)
+        Project an Edge onto a Shape generating new wires on the surfaces of the object
+        one and only one of `direction` or `center` must be provided. Note that one or
+        more wires may be generated depending on the topology of the target object and
+        location/direction of projection.
+
+        To avoid flipping the normal of a face built with the projected wire the orientation
+        of the output wires are forced to be the same as self.
+
+        Args:
+          target_object: Object to project onto
+          direction: Parallel projection direction. Defaults to None.
+          center: Conical center of projection. Defaults to None.
+          target_object: Shape:
+          direction: VectorLike:  (Default value = None)
+          center: VectorLike:  (Default value = None)
+
+        Returns:
+          : Projected Edge(s)
+
+        Raises:
+          ValueError: Only one of direction or center must be provided
+
+        """
+        wire = Wire([edg])
+        projected_wires = wire.project_to_shape(target_object, direction, center)
+        projected_edges = ShapeList()
+
         for w in projected_wires:
-            projected_edges = w.edges()
-        
+            for e in w.edges():
+                projected_edges.append(e)
+
         return projected_edges
+    
+
+    #def project(self, edgetoproject : Edge):
+    def project(self, sk : Sketch) -> Sketch:
+        answw = Sketch()
+        edges = sk.edges()
+        i = 0
+        for e in edges:
+            print(i, e.geom_type)
+            pes = self.project_edge_to_shape(e,self._mysphere, center=self.center)
+
+            answw += pes
+            i += 1
+
+        return answw
 
             
 

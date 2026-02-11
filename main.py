@@ -43,26 +43,25 @@ for alph in crnarcs:
 psk += pc * Circle(2*bandw)
 psk -= pc * Circle(bandw)
 
+psk = Sketch() + psk
 ri = Dodecahedron.rad_inner(a)
 #a sperical projector for a sphere with radius r and centre in centre
 spo = SphericalProjector(r, center=Vector(dc.X,dc.Y,ri))
 sps = spo._mysphere
 
 #now project the sketch
-projs = []
-for sh in psk.edges():
-    projs.append(spo.project(sh))
+ppsk = spo.project(psk)
 
+ppskpart = extrude(psk, 2.0*MM)
 azspro = AzimuthalEquidistantProjecor(sphcenter=spo.center,
                                       sphrad=spo.radius)
 azspro.set_proj_center(0, m.pi) #projection centre on the south pole
 
-planproj = Sketch()
-for edg in projs:
-    planed = azspro.project(edg)
-    planed = Pos(0,0, -spo.radius - 10) * planed
-    planproj += planed
+planproj = Pos(0,0,-r-50) * azspro.project(ppsk)
 
+partex = extrude(planproj, -1.2*MM)
+
+dode = Pos(0,0, ri) * Dodecahedron(outerradius=r)
 show_clear()
-show(psk, dode_sk, projs, sps, planproj)
+show(psk, dode_sk, ppsk, sps, planproj, dode, partex, ppskpart)
 #show(Dodecahedron(outerradius=r))
