@@ -113,13 +113,12 @@ class AzimuthalEquidistantProjecor():
 
         return Vector(x,y,0)
     
-    def proj_line(self, l : Line) -> ShapeList:
-        answ = ShapeList()
+    def project_line(self, l : Line) -> Edge:
         st = l.start_point()
         end = l.end_point()
         stp = self.proj_outerpoint(st)
         endp = self.proj_outerpoint(end)
-        answ.append(Line(stp,endp))
+        answ = Line(stp,endp).edge()
 
         return answ
 
@@ -129,8 +128,7 @@ class AzimuthalEquidistantProjecor():
     def to_outercoords(self, v:Vector):
         return v + self._sphcenter
     
-    def project_bspline(self, ed: Edge) ->ShapeList:
-        answ = ShapeList()
+    def project_bspline(self, ed: Edge) -> Edge:
         ptps = []
         steps = 20
         stepsize = 1/20
@@ -140,14 +138,13 @@ class AzimuthalEquidistantProjecor():
             ptp = self.proj_outerpoint(pt)
             ptps.append(ptp)
 
-        answ.append(Spline(ptps))
+        answ = Spline(ptps).edge()
 
         return answ
 
-    def project_circle(self, ed: Edge) -> ShapeList:
+    def project_circle(self, ed: Edge) -> Edge:
         pc = ed.arc_center
         pc = self.to_relcoords(pc)
-        answ = ShapeList()
 
         dbgstr = "project_circle..."
         if ed.is_closed: 
@@ -160,7 +157,7 @@ class AzimuthalEquidistantProjecor():
             prp = self.proj_outerpoint(pr)
 
             rp = (prp - pcp).length
-            answ.append(Pos(pcp) * Circle(rp))
+            answ = Pos(pcp) * Circle(rp)
             
         elif pc.length < 1e-15: #great circle
             #now the centre of that circle should be identical with the centre of the sphere 
@@ -172,7 +169,7 @@ class AzimuthalEquidistantProjecor():
             psp = self.proj_outerpoint(sp)
             pep = self.proj_outerpoint(ep)
 
-            answ.append(Line(psp, pep))
+            answ = Line(psp, pep)
         else:
             #we haw an arc with a center somewhere on the sphere and start end endpt also on the sphere
             dbgstr += "centre on sphere"
@@ -183,31 +180,56 @@ class AzimuthalEquidistantProjecor():
                 vp = self.proj_outerpoint(v)
                 ptsp.append(vp)
             
-            answ.append(Spline(ptsp))
+            answ = Spline(ptsp)
 
-        print(dbgstr)
-        return answ
-    
-    #def project(self, eds : list[Edge]):
+        return answ.edge()
+
+    # def project(self, sk : Sketch) -> Sketch:
+    #     answ = ShapeList()
+    #     for edg in sk.edges():
+    #         #print(edg.geom_type)
+    #         match edg.geom_type:
+    #             case GeomType.LINE:
+    #                 newl = self.project_line(edg)
+    #                 answ += newl
+    #             case GeomType.CIRCLE:
+    #                 newcirc = self.project_circle(edg)
+    #                 answ += newcirc
+    #             case GeomType.BSPLINE:
+    #                 newspl = self.project_bspline(edg)
+    #                 answ += newspl
+    #             case _:
+    #                 #print("not handled")
+    #                 raise Exception("Unknown geometry type for projection")
+
+    #     return Sketch(answ)
+        
     def project(self, sk : Sketch) -> Sketch:
-        answ = ShapeList()
-        for edg in sk.edges():
-            #print(edg.geom_type)
-            match edg.geom_type:
-                case GeomType.LINE:
-                    newl = self.project_line(edg)
-                    answ += newl
-                case GeomType.CIRCLE:
-                    newcirc = self.project_circle(edg)
-                    answ += newcirc
-                case GeomType.BSPLINE:
-                    newspl = self.project_bspline(edg)
-                    answ += newspl
-                case _:
-                    #print("not handled")
-                    raise Exception("Unknown geometry type for projection")
+        pedges = []
+        pwires = ShapeList()
 
-        return Sketch(answ)
+        wires = sk.wires()
+        for w in wires:
+            print("projecting a wire")
+            pedges.clear()
+            for edg in w.edges():
+                print("projecting an edge")
+                match edg.geom_type:
+                    case GeomType.LINE:
+                        newedge = self.project_line(edg)
+                    case GeomType.CIRCLE:
+                        newedge = self.project_circle(edg)
+                    case GeomType.BSPLINE:
+                        newedge = self.project_bspline(edg)
+                    case _:
+                        #print("not handled")
+                        raise Exception("Unknown geometry type for projection")
+                pedges.append(newedge)
+
+            pwire = Wire(pedges)
+            pwires.append(pwire)
+
+        return Sketch(pwires)
             
 
 

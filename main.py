@@ -59,7 +59,7 @@ azspro.set_proj_center(0, m.pi) #projection centre on the south pole
 
 planproj = Pos(0,0,-r-50) * azspro.project(ppsk)
 
-partex = extrude(planproj, -1.2*MM)
+partex = extrude(planproj, 1.2*MM)
 
 dode = Pos(0,0, ri) * Dodecahedron(outerradius=r)
 show_clear()
