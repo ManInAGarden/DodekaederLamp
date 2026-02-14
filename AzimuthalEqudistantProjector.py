@@ -118,7 +118,7 @@ class AzimuthalEquidistantProjecor():
         end = l.end_point()
         stp = self.proj_outerpoint(st)
         endp = self.proj_outerpoint(end)
-        answ = Line(stp,endp).edge()
+        answ = Edge.make_line(stp, endp)
 
         return answ
 
@@ -132,13 +132,13 @@ class AzimuthalEquidistantProjecor():
         ptps = []
         steps = 20
         stepsize = 1/20
-        for i in range(0,steps):
+        for i in range(0,steps+1):
             pf = i*stepsize
             pt = ed.position_at(pf)
             ptp = self.proj_outerpoint(pt)
             ptps.append(ptp)
 
-        answ = Spline(ptps).edge()
+        answ = Edge.make_spline(ptps)
 
         return answ
 
@@ -146,72 +146,48 @@ class AzimuthalEquidistantProjecor():
         pc = ed.arc_center
         pc = self.to_relcoords(pc)
 
-        dbgstr = "project_circle..."
         if ed.is_closed: 
             # this only happends when the full circle is on the sphere
             # the procetion normally is a strangely bent curve
-            dbgstr += "closed circle"
             pr = pc + Vector(ed.radius,0,0)
 
             pcp = self.to_outercoords(self.proj_point(pc))
             prp = self.proj_outerpoint(pr)
-
+            outerkoordpl = Plane(pcp)
             rp = (prp - pcp).length
-            answ = Pos(pcp) * Circle(rp)
+            answ = Edge.make_circle(rp, outerkoordpl)
+            #answ = Pos(pcp) * Circle(rp)
             
         elif pc.length < 1e-15: #great circle
             #now the centre of that circle should be identical with the centre of the sphere 
             #and the projection is a straight line
-            dbgstr += "arc centre = centre of sphere"
             sp = ed.start_point()
             ep = ed.end_point()
 
             psp = self.proj_outerpoint(sp)
             pep = self.proj_outerpoint(ep)
-
-            answ = Line(psp, pep)
+            answ = Edge.make_line(psp, pep)
         else:
             #we haw an arc with a center somewhere on the sphere and start end endpt also on the sphere
-            dbgstr += "centre on sphere"
             locs = ed.distribute_locations(10, positions_only=True)
             ptsp = []
             for loc in locs:
                 v = Vector(loc.position.X, loc.position.Y, loc.position.Z)
                 vp = self.proj_outerpoint(v)
                 ptsp.append(vp)
-            
-            answ = Spline(ptsp)
 
-        return answ.edge()
+            answ = Edge.make_spline(ptsp)            
 
-    # def project(self, sk : Sketch) -> Sketch:
-    #     answ = ShapeList()
-    #     for edg in sk.edges():
-    #         #print(edg.geom_type)
-    #         match edg.geom_type:
-    #             case GeomType.LINE:
-    #                 newl = self.project_line(edg)
-    #                 answ += newl
-    #             case GeomType.CIRCLE:
-    #                 newcirc = self.project_circle(edg)
-    #                 answ += newcirc
-    #             case GeomType.BSPLINE:
-    #                 newspl = self.project_bspline(edg)
-    #                 answ += newspl
-    #             case _:
-    #                 #print("not handled")
-    #                 raise Exception("Unknown geometry type for projection")
+        return answ
 
-    #     return Sketch(answ)
         
     def project(self, sk : Sketch) -> Sketch:
         answ = Sketch()
         wires = sk.wires()
         for w in wires:
-            print("projecting a wire")
-            oriedges = w.edges()
-            for edg in oriedges:
-                print("projecting an edge")
+            isi = w.is_interior
+            edgesp = []
+            for edg in w.edges():
                 match edg.geom_type:
                     case GeomType.LINE:
                         newedge = self.project_line(edg)
@@ -222,7 +198,10 @@ class AzimuthalEquidistantProjecor():
                     case _:
                         #print("not handled")
                         raise Exception("Unknown geometry type for projection")
-                answ += newedge
+                edgesp.append(newedge)
+
+            wp = Wire(edges=edgesp, sequenced=True)
+            answ += wp
 
         return answ
             

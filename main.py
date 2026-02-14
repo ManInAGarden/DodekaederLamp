@@ -52,19 +52,18 @@ sps = spo._mysphere
 #now project the sketch
 ppsk = spo.project(psk)
 
-ppskpart = extrude(psk, 2.0*MM)
 azspro = AzimuthalEquidistantProjecor(sphcenter=spo.center,
                                       sphrad=spo.radius)
 azspro.set_proj_center(0, m.pi) #projection centre on the south pole
 
 #planproj = Pos(0,0,-r-50) * azspro.project(ppsk)
 planproj = azspro.project(ppsk)
+
 projface = make_face(planproj)
-pr = reversed(planproj)
-projface2 = make_face(pr)
+
 partex = extrude(projface, 1.2*MM)
 
 dode = Pos(0,0, ri) * Dodecahedron(outerradius=r)
 show_clear()
-show(psk, dode_sk, ppsk, sps, planproj, dode, ppskpart, partex)
+show(psk, dode_sk, ppsk, planproj, partex)
 #show(Dodecahedron(outerradius=r))
