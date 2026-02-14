@@ -205,14 +205,12 @@ class AzimuthalEquidistantProjecor():
     #     return Sketch(answ)
         
     def project(self, sk : Sketch) -> Sketch:
-        pedges = []
-        pwires = ShapeList()
-
+        answ = Sketch()
         wires = sk.wires()
         for w in wires:
             print("projecting a wire")
-            pedges.clear()
-            for edg in w.edges():
+            oriedges = w.edges()
+            for edg in oriedges:
                 print("projecting an edge")
                 match edg.geom_type:
                     case GeomType.LINE:
@@ -224,12 +222,9 @@ class AzimuthalEquidistantProjecor():
                     case _:
                         #print("not handled")
                         raise Exception("Unknown geometry type for projection")
-                pedges.append(newedge)
+                answ += newedge
 
-            pwire = Wire(pedges)
-            pwires.append(pwire)
-
-        return Sketch(pwires)
+        return answ
             
 
 

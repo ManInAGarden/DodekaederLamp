@@ -57,11 +57,14 @@ azspro = AzimuthalEquidistantProjecor(sphcenter=spo.center,
                                       sphrad=spo.radius)
 azspro.set_proj_center(0, m.pi) #projection centre on the south pole
 
-planproj = Pos(0,0,-r-50) * azspro.project(ppsk)
-
-partex = extrude(planproj, 1.2*MM)
+#planproj = Pos(0,0,-r-50) * azspro.project(ppsk)
+planproj = azspro.project(ppsk)
+projface = make_face(planproj)
+pr = reversed(planproj)
+projface2 = make_face(pr)
+partex = extrude(projface, 1.2*MM)
 
 dode = Pos(0,0, ri) * Dodecahedron(outerradius=r)
 show_clear()
-show(psk, dode_sk, ppsk, sps, planproj, dode, partex, ppskpart)
+show(psk, dode_sk, ppsk, sps, planproj, dode, ppskpart, partex)
 #show(Dodecahedron(outerradius=r))
