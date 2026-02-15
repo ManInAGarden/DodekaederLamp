@@ -76,28 +76,24 @@ class SphericalProjector():
         return projected_edges
     
 
-    #def project(self, edgetoproject : Edge):
-    # def project(self, sk : Sketch) -> Sketch:
-    #     answw = Sketch()
-    #     edges = sk.edges()
-    #     i = 0
-    #     for e in edges:
-    #         print(i, e.geom_type)
-    #         pes = self.project_edge_to_shape(e,self._mysphere, center=self.center)
-
-    #         answw += pes
-    #         i += 1
-
-    #     return answw
-
     def project(self, sk: Sketch) -> Sketch:
-        answ = ShapeList()
-        wires = sk.wires()
-        for w in wires:
+        answ = Sketch()
+        for w in sk.wires():
+            print("CONSTR" + str(w.is_forward))
             pwires = w.project_to_shape(self._mysphere, center=self.center)
             for pw in pwires:
-                answ.append(pw)
+                answ += pw
 
-        return Sketch(answ)
+        answ.label = "SP_" + sk.label #must be done here because answ is not really preserved during += operation
+        return answ
+
+    # def project(self, sk: Sketch) -> Sketch:
+    #     answ = ShapeList()
+    #     for w in sk.wires():
+    #         pwires = w.project_to_shape(self._mysphere, center=self.center)
+    #         for pw in pwires:
+    #             answ.append(pw)
+
+    #     return Sketch(answ, label="SP_" + sk.label)
             
 

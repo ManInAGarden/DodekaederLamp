@@ -31,7 +31,6 @@ spsk = Line((-deltm,-bandw/2),(-penta_ukr,-bandw/2))
 spsk += ThreePointArc((-penta_ukr,-bandw/2),(-penta_ukr-bandw/2,0),(-penta_ukr,bandw/2))
 spsk += Line((-penta_ukr,bandw/2), (-deltm,bandw/2))
 
-#psk = pc * Circle(2*bandw)
 psk = None
 crnarcs = RegPentagon.get_corner_arcs()
 for alph in crnarcs:
@@ -42,8 +41,9 @@ for alph in crnarcs:
 
 psk += pc * Circle(2*bandw)
 psk -= pc * Circle(bandw)
+psk.label = "CONSTR"
 
-psk = Sketch() + psk
+#psk = Sketch(label="rawcontruction") + psk
 ri = Dodecahedron.rad_inner(a)
 #a sperical projector for a sphere with radius r and centre in centre
 spo = SphericalProjector(r, center=Vector(dc.X,dc.Y,ri))

@@ -155,9 +155,7 @@ class AzimuthalEquidistantProjecor():
             prp = self.proj_outerpoint(pr)
             outerkoordpl = Plane(pcp)
             rp = (prp - pcp).length
-            answ = Edge.make_circle(rp, outerkoordpl)
-            #answ = Pos(pcp) * Circle(rp)
-            
+            answ = Edge.make_circle(rp, outerkoordpl) #creates a clockwise directed circle by default
         elif pc.length < 1e-15: #great circle
             #now the centre of that circle should be identical with the centre of the sphere 
             #and the projection is a straight line
@@ -168,7 +166,7 @@ class AzimuthalEquidistantProjecor():
             pep = self.proj_outerpoint(ep)
             answ = Edge.make_line(psp, pep)
         else:
-            #we haw an arc with a center somewhere on the sphere and start end endpt also on the sphere
+            #we have an arc with a center somewhere on the sphere and start end endpt also on the sphere
             locs = ed.distribute_locations(10, positions_only=True)
             ptsp = []
             for loc in locs:
@@ -185,7 +183,6 @@ class AzimuthalEquidistantProjecor():
         answ = Sketch()
         wires = sk.wires()
         for w in wires:
-            isi = w.is_interior
             edgesp = []
             for edg in w.edges():
                 match edg.geom_type:
@@ -201,8 +198,11 @@ class AzimuthalEquidistantProjecor():
                 edgesp.append(newedge)
 
             wp = Wire(edges=edgesp, sequenced=True)
+            if w.is_forward != wp.is_forward:
+                raise Exception("URKS")
             answ += wp
 
+        answ.label = "AEP_" + sk.label #must be done here because label in answ changes do noen during += operation
         return answ
             
 
