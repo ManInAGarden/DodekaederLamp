@@ -47,3 +47,7 @@ for w in psk.wires():
 #all are foreward
 #but look at the face - its correct
 
+for f in psk.faces():
+    iw = f.inner_wires()
+    ow = f.outer_wire()
+

@@ -1,7 +1,7 @@
 from build123d import *
 import math as m
 
-class AzimuthalEquidistantProjecor():
+class AzimuthalEquidistantProjector():
 
     @classmethod
     def pt_onarc(cls, phi : float, theta : float, r : float, cent : Vector=Vector(0,0,0)):
@@ -30,7 +30,7 @@ class AzimuthalEquidistantProjecor():
                  projcenterpt:Vector=None,
                  zeromed:Vector=None):
         """
-         erzeugt ein Exemplar der Klasse
+         Creates an instance of the pojector
         
         :param self: Description
         :param sphcenter: Vecor in R3 defining the centre where all other koordinates  ar erelated to

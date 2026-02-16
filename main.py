@@ -5,7 +5,7 @@ import math as m
 from Dodecahedron import Dodecahedron
 from SphericalProjector import SphericalProjector
 from RegPentagon import RegPentagon
-from AzimuthalEqudistantProjector import AzimuthalEquidistantProjecor
+from AzimuthalEqudistantProjector import AzimuthalEquidistantProjector
 
 # create a lamp which is like a ball of a given diameter with printable elements constructing a ball and connecting in the points goven
 # by the corners of a dodecaeder which also are palced on the surface of the ball.
@@ -52,7 +52,7 @@ sps = spo._mysphere
 #now project the sketch
 ppsk = spo.project(psk)
 
-azspro = AzimuthalEquidistantProjecor(sphcenter=spo.center,
+azspro = AzimuthalEquidistantProjector(sphcenter=spo.center,
                                       sphrad=spo.radius)
 azspro.set_proj_center(0, m.pi) #projection centre on the south pole
 

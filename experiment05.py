@@ -1,7 +1,7 @@
 from build123d import *
 from ocp_vscode import *
 from SphericalProjector import SphericalProjector
-from AzimuthalEqudistantProjector import AzimuthalEquidistantProjecor
+from AzimuthalEqudistantProjector import AzimuthalEquidistantProjector
 import math as m
 
 
@@ -29,7 +29,7 @@ phi02 = rad(phi02_d)
 spro = SphericalProjector(sphrad)
 sph = spro._mysphere
 
-azp = AzimuthalEquidistantProjecor(sphrad=spro.radius)
+azp = AzimuthalEquidistantProjector(sphrad=spro.radius)
 pt1 = azp.pt_at(phi01, theta01)
 pt2 = azp.pt_at(phi02, theta02)
 ptm = azp.pt_at(phi01 + (phi02-phi01)/2, theta01 + (theta02-theta01))
