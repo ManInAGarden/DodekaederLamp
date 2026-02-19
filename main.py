@@ -26,31 +26,26 @@ penta_ukr = RegPentagon.get_outer_radius(a)
 dc = dode_sk.center()
 pc = Pos(dc)
 
-deltm = m.sqrt(incdia**2 - bandw**2/4)
-spsk = Line((-deltm,-bandw/2),(-penta_ukr,-bandw/2))
-spsk += ThreePointArc((-penta_ukr,-bandw/2),(-penta_ukr-bandw/2,0),(-penta_ukr,bandw/2))
-spsk += Line((-penta_ukr,bandw/2), (-deltm,bandw/2))
+startvec = Vector(penta_ukr,0)
+startang =  -dode_corners[0].get_angle(Vector(penta_ukr,0))
+skt = (
+    Face()
+    + PolarLocations(0,5,startang) * SlotCenterPoint((penta_ukr/2, 0), (0, 0), bandw)
+    + Circle(2*bandw)
+    - Circle(bandw)
+)
 
-psk = None
-crnarcs = RegPentagon.get_corner_arcs()
-for alph in crnarcs:
-    if psk is None:
-        psk = Rot(0,0,alph-180) * make_face(spsk)
-    else:
-        psk += Rot(0,0,alph-180) * make_face(spsk)
-
-psk += pc * Circle(2*bandw)
-psk -= pc * Circle(bandw)
-psk.label = "CONSTR"
+skt.label = "CONSTR"
 
 #psk = Sketch(label="rawcontruction") + psk
 ri = Dodecahedron.rad_inner(a)
+ro = Dodecahedron.rad_outer(a)
 #a sperical projector for a sphere with radius r and centre in centre
 spo = SphericalProjector(r, center=Vector(dc.X,dc.Y,ri))
 sps = spo._mysphere
 
 #now project the sketch
-ppsk = spo.project(psk)
+ppsk = spo.project(skt)
 
 azspro = AzimuthalEquidistantProjector(sphcenter=spo.center,
                                       sphrad=spo.radius)
@@ -58,12 +53,12 @@ azspro.set_proj_center(0, m.pi) #projection centre on the south pole
 
 #planproj = Pos(0,0,-r-50) * azspro.project(ppsk)
 planproj = azspro.project(ppsk)
+planproj.position -= (0, 0, ro)
 
 projface = make_face(planproj)
-
 partex = extrude(projface, 1.2*MM)
 
 dode = Pos(0,0, ri) * Dodecahedron(outerradius=r)
 show_clear()
-show(psk, dode_sk, ppsk, planproj, partex)
+show(skt, dode_sk, ppsk, planproj, partex)
 #show(Dodecahedron(outerradius=r))
