@@ -147,15 +147,26 @@ class AzimuthalEquidistantProjector():
         pc = self.to_relcoords(pc)
 
         if ed.is_closed: 
-            # this only happends when the full circle is on the sphere
-            # the procetion normally is a strangely bent curve
-            pr = pc + Vector(ed.radius,0,0)
+            if pc==self.proj_point:
+                # this only happends when the full circle is on the sphere
+                # the projection normally is a strangely bent curve except when
+                # the circle's center is in the projection point
+                pr = pc + Vector(ed.radius,0,0)
+                pcp = self.proj_outerpoint(pc)
+                prp = self.proj_outerpoint(pr)
+                outerkoordpl = Plane(pcp)
+                rp = (prp - pcp).length
+                answ = Edge.make_circle(rp, outerkoordpl) #creates a clockwise directed circle by default
+            else:
+                #we have a strangely bent curve
+                locs = ed.distribute_locations(50, positions_only=True)
+                ptsp = []
+                for loc in locs:
+                    v = Vector(loc.position.X, loc.position.Y, loc.position.Z)
+                    vp = self.proj_outerpoint(v)
+                    ptsp.append(vp)
 
-            pcp = self.to_outercoords(self.proj_point(pc))
-            prp = self.proj_outerpoint(pr)
-            outerkoordpl = Plane(pcp)
-            rp = (prp - pcp).length
-            answ = Edge.make_circle(rp, outerkoordpl) #creates a clockwise directed circle by default
+                answ = Edge.make_spline(ptsp)                
         elif pc.length < 1e-15: #great circle
             #now the centre of that circle should be identical with the centre of the sphere 
             #and the projection is a straight line
@@ -182,6 +193,8 @@ class AzimuthalEquidistantProjector():
     def project(self, sk : Sketch) -> Sketch:
         answ = Sketch()
         wires = sk.wires()
+        is_first = True
+        iws = []
         for w in wires:
             edgesp = []
             for edg in w.edges():
@@ -200,8 +213,13 @@ class AzimuthalEquidistantProjector():
             wp = Wire(edges=edgesp, sequenced=True)
             if w.is_forward != wp.is_forward:
                 raise Exception("URKS")
-            answ += wp
+            if is_first:
+                ow = wp
+                is_first = False
+            else:
+                iws.append(wp)
 
+        answ = Face(ow, iws)
         answ.label = "AEP_" + sk.label #must be done here because label in answ changes do noen during += operation
         return answ
             

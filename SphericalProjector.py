@@ -87,13 +87,17 @@ class SphericalProjector():
         answ.label = "SP_" + sk.label #must be done here because answ is not really preserved during += operation
         return answ
 
-    # def project(self, sk: Sketch) -> Sketch:
-    #     answ = ShapeList()
-    #     for w in sk.wires():
-    #         pwires = w.project_to_shape(self._mysphere, center=self.center)
-    #         for pw in pwires:
-    #             answ.append(pw)
+    def project_face(self, fc : Face) -> Sketch:
+        ow = fc.outer_wire()
+        iws = fc.inner_wires()
+        pow = ow.project_to_shape(self._mysphere, center=self.center)[0]
 
-    #     return Sketch(answ, label="SP_" + sk.label)
-            
+        answ = Sketch() + pow
+        for iw in iws:
+            #iwps.append(iw.project_to_shape(self._mysphere, center=self.center))
+            answ += iw.project_to_shape(self._mysphere, center=self.center)
+        
+        answ.lab = "SP_" + fc.label #must be done here because answ is not really preserved during += operation
+
+        return answ
 
