@@ -24,6 +24,10 @@ class RegPentagon():
         
         return answ
     
+    @property
+    def faces(self):
+        return self._myfaces
+    
     def __init__(self, a:float):
         """
         Create a pentagon with edges of length a and 

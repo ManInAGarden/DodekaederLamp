@@ -1,4 +1,5 @@
 from build123d import *
+from BasePolyHedron import BasePolyHedron
 
 class SphericalProjector():
 
@@ -33,49 +34,6 @@ class SphericalProjector():
         return (f * ptp) + self._center
     
 
-    def project_edge_to_shape(
-        self,
-        edg : Edge,
-        target_object, #a Shape
-        direction: VectorLike | None = None,
-        center: VectorLike | None = None,
-    ) -> list[Edge]:
-        """Project Edge - COPY BECAUSE THE ORIGINAL CONTAINS AN ERROR
-
-        Project an Edge onto a Shape generating new wires on the surfaces of the object
-        one and only one of `direction` or `center` must be provided. Note that one or
-        more wires may be generated depending on the topology of the target object and
-        location/direction of projection.
-
-        To avoid flipping the normal of a face built with the projected wire the orientation
-        of the output wires are forced to be the same as self.
-
-        Args:
-          target_object: Object to project onto
-          direction: Parallel projection direction. Defaults to None.
-          center: Conical center of projection. Defaults to None.
-          target_object: Shape:
-          direction: VectorLike:  (Default value = None)
-          center: VectorLike:  (Default value = None)
-
-        Returns:
-          : Projected Edge(s)
-
-        Raises:
-          ValueError: Only one of direction or center must be provided
-
-        """
-        wire = Wire([edg])
-        projected_wires = wire.project_to_shape(target_object, direction, center)
-        projected_edges = ShapeList()
-
-        for w in projected_wires:
-            for e in w.edges():
-                projected_edges.append(e)
-
-        return projected_edges
-    
-
     def project(self, sk: Sketch) -> Sketch:
         answ = Sketch()
         for w in sk.wires():
@@ -98,6 +56,23 @@ class SphericalProjector():
             answ += iw.project_to_shape(self._mysphere, center=self.center)
         
         answ.lab = "SP_" + fc.label #must be done here because answ is not really preserved during += operation
+
+        return answ
+    
+    def project_multiple(self, fc : Face, bh: BasePolyHedron) -> Sketch:
+        """project the given faces as if they were originally 
+        placed on every face of the hedron.
+        """
+        fs = bh.faces()
+
+        answ = Sketch()
+        for f in fs:
+            if not f.is_planar:
+                raise Exception("project multiple works only with planar faces on the base hedron")
+            #first move the original fact to the face of the polyhedron    
+            #and align the centers
+            fcp = f.center_location * fc
+            answ += fcp
 
         return answ
 

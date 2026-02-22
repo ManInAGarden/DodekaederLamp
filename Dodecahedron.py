@@ -2,24 +2,18 @@ from build123d import *
 import math as m
 
 from RegPentagon import RegPentagon
+from BasePolyHedron import BasePolyHedron
 
-class Dodecahedron(BasePartObject):
+class Dodecahedron(BasePolyHedron):
 
     @property
     def a(self):
         return self._a
-    
-    @property
-    def mycentre(self):
-        return self._mycenter
-    
+        
     @property
     def botsk(self):
         return self._sk
     
-    @property
-    def myfaces(self):
-        return self._myfaces
     
     @classmethod
     def rad_outer(cls, a):
@@ -42,7 +36,7 @@ class Dodecahedron(BasePartObject):
     def getbasesketch(cl, a:float):
         """
         Get a sketch for the basic pentagon forming the outer faces of the
-        dodecahedrin
+        dodecahedron
         
         :param cl: Description
         :param a: length of the sides of the pentagon
@@ -74,6 +68,7 @@ class Dodecahedron(BasePartObject):
             answ.append((corner.X, corner.Y))
 
         return tuple(penta.corners)
+
 
     def __init__(self, elen : float = None, 
                  outerradius : float = None):

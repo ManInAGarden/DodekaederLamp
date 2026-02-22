@@ -48,9 +48,11 @@ ro = Dodecahedron.rad_outer(a)
 spo = SphericalProjector(r, center=Vector(dc.X,dc.Y,ri))
 sps = spo._mysphere
 
+dode = Pos(0,0, ri) * Dodecahedron(outerradius=r)
+
 #now project the sketch
-#ppsk = spo.project(skt)
 ppsk = spo.project_face(skt)
+ppsk_all = spo.project_multiple(skt, dode)
 
 azspro = AzimuthalEquidistantProjector(sphcenter=spo.center,
                                       sphrad=spo.radius)
@@ -63,7 +65,6 @@ projface.position -= (0,0, ro + 10*MM)
 #projface = make_face(planproj)
 partex = extrude(projface, 1.2*MM)
 
-dode = Pos(0,0, ri) * Dodecahedron(outerradius=r)
 #show(skt, dode_sk, ppsk, planproj, partex)
 show_all()
 #show(Dodecahedron(outerradius=r))
